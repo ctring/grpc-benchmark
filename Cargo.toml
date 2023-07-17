@@ -1,0 +1,28 @@
+[package]
+name = "grpc-benchmark"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+async-stream = "0.2"
+clap = { version = "4.3", features = ["derive"] }
+futures-core = "0.3"
+futures-util = "0.3"
+h2 = "0.3"
+prost = "0.11"
+tonic = "0.9"
+tokio = { version = "1.29", features = ["rt-multi-thread"] }
+tokio-stream = "0.1"
+
+[build-dependencies]
+tonic-build = "0.9.2"
+
+[[bin]]
+name = "server"
+path = "src/server.rs"
+
+[[bin]]
+name = "client"
+path = "src/client.rs"
