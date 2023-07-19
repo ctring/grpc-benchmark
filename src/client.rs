@@ -4,6 +4,7 @@ pub mod pb {
 
 use clap::Parser;
 use std::time::Instant;
+use tokio::sync::mpsc;
 use tokio_stream::StreamExt;
 use tonic::{transport::Channel, Request};
 
@@ -20,11 +21,17 @@ async fn unary_streaming_echo(client: &mut EchoClient<Channel>, num: usize) {
 }
 
 async fn bidirectional_streaming_echo(client: &mut EchoClient<Channel>, num: usize) {
+    let (tx, mut rx) = mpsc::channel(128);
+
     let outbound = async_stream::stream! {
         for i in 0..num {
             yield EchoRequest {
                 message: format!("msg {:02}", i),
             };
+            if i == num - 1 {
+                break;
+            }
+            rx.recv().await.unwrap();
         }
     };
 
@@ -37,6 +44,7 @@ async fn bidirectional_streaming_echo(client: &mut EchoClient<Channel>, num: usi
 
     while let Some(received) = resp_stream.next().await {
         received.unwrap();
+        let _ = tx.try_send(true);
     }
 }
 
@@ -111,7 +119,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
         println!(
             "Txns per second: {:.2}",
-            cli.txns as f32 / (avg_elapsed / 1000000.0)
+            cli.txns as f32 / (avg_elapsed / 1000000.0) * cli.clients as f32
         );
     }
 
